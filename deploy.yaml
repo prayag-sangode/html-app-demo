@@ -17,6 +17,9 @@ spec:
           image: prayags/html-app2:latest  # Use your Docker image
           ports:
             - containerPort: 80
+      imagePullSecrets:  # Specify the secret for image pull
+        - name: dockerhub-secret  # Reference the secret you created
+
 ---
 apiVersion: v1
 kind: Service
