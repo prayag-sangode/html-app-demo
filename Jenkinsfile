@@ -33,7 +33,7 @@ pipeline {
                     // Build Docker image
                     dir('my-workspace') {
                         sh "pwd;ls"
-                        sh "docker build -t ${DOCKER_IMAGE_NAME} ."
+                        sh "sudo docker build -t ${DOCKER_IMAGE_NAME} ."
                     }    
                 }
             }
@@ -44,11 +44,11 @@ pipeline {
                 script {
                     // Authenticate with Docker Hub using Jenkins credentials
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-id', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
-                        sh "docker login -u ${DOCKERHUB_USERNAME} -p ${DOCKERHUB_PASSWORD}"
+                        sh "sudo docker login -u ${DOCKERHUB_USERNAME} -p ${DOCKERHUB_PASSWORD}"
                         // Push Docker image to Docker Hub
-                        sh "docker push ${DOCKER_IMAGE_NAME}"
+                        sh "sudo docker push ${DOCKER_IMAGE_NAME}"
                         // Logout from Docker Hub (optional)
-                        sh "docker logout"
+                        sh "sudo docker logout"
                     }
                 }
             }
