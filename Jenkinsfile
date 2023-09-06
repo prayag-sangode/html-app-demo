@@ -56,11 +56,17 @@ pipeline {
 
         stage('Create Kubernetes Secret') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-id', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
-                    sh "kubectl create secret generic regcred --from-literal=username=\$DOCKERHUB_USERNAME --from-literal=password=\$DOCKERHUB_PASSWORD"
-                }
+                script {
+                      def kubeconfigPath
+                      withCredentials([file(credentialsId: 'microk8s-id', variable: 'KUBECONFIG_FILE')]) {                          
+            }
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-id', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                        sh "kubectl create secret generic regcred --from-literal=username=\$DOCKERHUB_USERNAME --from-literal=password=\$DOCKERHUB_PASSWORD --kubeconfig=\${KUBECONFIG_FILE}"
             }
         }
+    }
+}
+
         
         stage('Deploy to Kubernetes') {
             steps {
