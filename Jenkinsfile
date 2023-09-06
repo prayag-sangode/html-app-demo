@@ -21,7 +21,7 @@ pipeline {
                     sh "mkdir -p my-workspace"
                     dir('my-workspace') {
                         // Clone the Git repository using GitHub credentials
-                        git credentialsId: 'github-credentials-id', url: REPO_URL, branch: BRANCH
+                        git credentialsId: 'github-id', url: REPO_URL, branch: BRANCH
                     }
                 }
             }
@@ -43,7 +43,7 @@ pipeline {
             steps {
                 script {
                     // Authenticate with Docker Hub using Jenkins credentials
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials-id', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-id', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
                         sh "docker login -u ${DOCKERHUB_USERNAME} -p ${DOCKERHUB_PASSWORD}"
                         // Push Docker image to Docker Hub
                         sh "docker push ${DOCKER_IMAGE_NAME}"
@@ -59,7 +59,7 @@ pipeline {
                 script {
                     // Use kubectl with the Kubernetes configuration content
                     dir('my-workspace') {
-                    withCredentials([file(credentialsId: 'kubeconfig-credentials-id', variable: 'KUBECONFIG_FILE')]) {
+                    withCredentials([file(credentialsId: 'microk8s-id', variable: 'KUBECONFIG_FILE')]) {
                         sh "kubectl get nodes --kubeconfig=\${KUBECONFIG_FILE}"
                         sh "pwd;ls"
                         //sh "kubectl create secret generic regcred --from-file=.dockerconfigjson=docker-config.json --type=kubernetes.io/dockerconfigjson"
