@@ -54,6 +54,14 @@ pipeline {
             }
         }
 
+        stage('Create Kubernetes Secret') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'your-jenkins-credentials-id', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                    sh "kubectl create secret generic regcred --from-literal=username=\$USERNAME --from-literal=password=\$PASSWORD"
+                }
+            }
+        }
+        
         stage('Deploy to Kubernetes') {
             steps {
                 script {
