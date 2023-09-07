@@ -33,7 +33,7 @@ pipeline {
                     // Build Docker image
                     dir('my-workspace') {
                         sh "pwd;ls"
-                        sh "sudo docker build -t ${DOCKER_IMAGE_NAME} ."
+                        sh "docker build -t ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER} -t ${DOCKER_IMAGE_NAME}:latest ."
                     }    
                 }
             }
@@ -46,7 +46,8 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: 'dockerhub-id', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
                         sh "sudo docker login -u ${DOCKERHUB_USERNAME} -p ${DOCKERHUB_PASSWORD}"
                         // Push Docker image to Docker Hub
-                        sh "sudo docker push ${DOCKER_IMAGE_NAME}"
+                        sh "docker push ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER}"
+                        sh "docker push ${DOCKER_IMAGE_NAME}:latest"
                         // Logout from Docker Hub (optional)
                         sh "sudo docker logout"
                     }
