@@ -33,7 +33,7 @@ pipeline {
                     // Build Docker image
                     dir('my-workspace') {
                         sh "pwd;ls"
-                        sh "docker build -t ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER} -t ${DOCKER_IMAGE_NAME}:latest ."
+                        sh "sudo docker build -t ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER} -t ${DOCKER_IMAGE_NAME}:latest ."
                     }    
                 }
             }
