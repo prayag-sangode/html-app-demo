@@ -1,2 +1,2 @@
 # html-app2
-My html app
+My html app - demo
