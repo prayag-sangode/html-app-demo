@@ -21,7 +21,7 @@ pipeline {
                 
                 // Clone the GitHub repository with authentication
                 withCredentials([usernamePassword(credentialsId: 'github-id', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-                    sh "git clone https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/prayag-sangode/my-demo.git"
+                    sh "git clone https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/prayag-sangode/html-app2.git"
                 }
             }
         }
