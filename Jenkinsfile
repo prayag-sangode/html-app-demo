@@ -14,29 +14,19 @@ pipeline {
                 deleteDir()
             }
         }
+
         stage('Clone Repository') {
             steps {
-                // Clean workspace before cloning
-                deleteDir()
-                
-                // Clone the GitHub repository with authentication
-                withCredentials([usernamePassword(credentialsId: 'github-id', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-                    sh "git clone https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/prayag-sangode/html-app2.git"
+                script {
+                    // Create a workspace directory and navigate to it
+                   sh "mkdir -p my-workspace"
+                    dir('my-workspace') {
+                        // Clone the Git repository using GitHub credentials
+                        git credentialsId: 'github-id', url: REPO_URL, branch: BRANCH
+                    }
                 }
             }
         }
-        //stage('Clone Repository') {
-        //    steps {
-        //        script {
-        //            // Create a workspace directory and navigate to it
-        //            sh "mkdir -p my-workspace"
-        //            dir('my-workspace') {
-        //                // Clone the Git repository using GitHub credentials
-        //                git credentialsId: 'github-id', url: REPO_URL, branch: BRANCH
-        //            }
-        //        }
-        //    }
-        //}
 
         stage('Build Docker Image') {
             steps {
