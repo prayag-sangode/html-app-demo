@@ -1,87 +1,47 @@
-pipeline {
-    agent any
+version: 0.2
 
-    environment {
-        REPO_URL = "https://github.com/prayag-sangode/html-app2.git"
-        BRANCH = "main"  // Replace with the desired branch
-        DOCKER_IMAGE_NAME = "prayags/html-app2"
-    }
+env:
+  variables:
+    AWS_REGION: us-east-1
+    ECR_REGISTRY: 058264559032.dkr.ecr.us-east-1.amazonaws.com
+    IMAGE_NAME: my-html-app
+    APP_NAME: my-html-app
+    CLUSTER_NAME: my-cluster
+    BUILD_NUMBER: ${CODEBUILD_BUILD_ID}  # Use build ID as image tag
 
-    stages {
-        stage('Clean Workspace') {
-            steps {
-                // Clean the workspace at the beginning
-                deleteDir()
-            }
-        }
+phases:
+  install:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
 
-        stage('Clone Repository') {
-            steps {
-                script {
-                    // Create a workspace directory and navigate to it
-                   sh "mkdir -p my-workspace"
-                    dir('my-workspace') {
-                        // Clone the Git repository using GitHub credentials
-                        git credentialsId: 'github-id', url: REPO_URL, branch: BRANCH
-                    }
-                }
-            }
-        }
+  pre_build:
+    commands:
+      - echo "Build Number is ${BUILD_NUMBER}"
+      - echo "Building the Docker image..."
+      - docker build -t $IMAGE_NAME:$BUILD_NUMBER -t $IMAGE_NAME:latest .
+      - echo Tagging the Docker image...
+      - docker tag $IMAGE_NAME:$BUILD_NUMBER $ECR_REGISTRY/$IMAGE_NAME:$BUILD_NUMBER
+      - docker tag $IMAGE_NAME:latest $ECR_REGISTRY/$IMAGE_NAME:latest
+      - echo Updating deployment.yaml...
+      - sed -i "s|{{IMAGE}}|${ECR_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}|g" deployment.yaml
+      - sed -i "s|{{APP_NAME}}|${APP_NAME}|g" deployment.yaml
 
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    // Build Docker image
-                    dir('my-workspace') {
-                        sh "pwd;ls"
-                        sh "sudo docker build -t ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER} -t ${DOCKER_IMAGE_NAME}:latest ."
-                    }    
-                }
-            }
-        }
+  build:
+    commands:
+      - echo Pushing the Docker image to Amazon ECR...
+      - docker push $ECR_REGISTRY/$IMAGE_NAME:$BUILD_NUMBER
+      - docker push $ECR_REGISTRY/$IMAGE_NAME:latest
 
-        stage('Push Docker Image') {
-            steps {
-                script {
-                    // Authenticate with Docker Hub using Jenkins credentials
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-id', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
-                        sh "sudo docker login -u ${DOCKERHUB_USERNAME} -p ${DOCKERHUB_PASSWORD}"
-                        // Push Docker image to Docker Hub
-                        sh "sudo docker push ${DOCKER_IMAGE_NAME}:${BUILD_NUMBER}"
-                        sh "sudo docker push ${DOCKER_IMAGE_NAME}:latest"
-                        // Logout from Docker Hub (optional)
-                        sh "sudo docker logout"
-                    }
-                }
-            }
-        }
+  post_build:
+    commands:
+      - echo Updating kubeconfig for EKS cluster...
+      - aws eks update-kubeconfig --name $CLUSTER_NAME --region $AWS_REGION
+      - echo Checking nodes in EKS cluster...
+      - kubectl get nodes
+      - echo Applying deployment.yaml to EKS...
+      - kubectl apply -f deployment.yaml
 
-      
-        stage('Deploy to Kubernetes') {
-            steps {
-                script {
-                    // Use kubectl with the Kubernetes configuration content
-                    dir('my-workspace') {
-                    withCredentials([file(credentialsId: 'microk8s-id', variable: 'KUBECONFIG_FILE')]) {
-                        sh "kubectl get nodes --kubeconfig=\${KUBECONFIG_FILE}"
-                        sh "pwd;ls"
-                        //sh "kubectl create secret generic regcred --from-file=.dockerconfigjson=docker-config.json --type=kubernetes.io/dockerconfigjson"
-                        sh "kubectl apply -f deploy.yaml --kubeconfig=\${KUBECONFIG_FILE}"
-                    }
-                  }
-                }
-            }
-        }
-
-        // Add more stages for your pipeline here
-    }
-
-    post {
-        success {
-            echo "Pipeline completed successfully."
-        }
-        failure {
-            echo "Pipeline failed."
-        }
-    }
-}
+artifacts:
+  files:
+    - deployment.yaml
