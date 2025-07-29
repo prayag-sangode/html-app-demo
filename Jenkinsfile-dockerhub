@@ -1,0 +1,43 @@
+pipeline {
+  agent any
+  environment {
+    IMAGE_NAME = 'html-app-demo'
+    IMAGE_TAG = 'v1'
+    DOCKER_USER = 'prayagsangode'
+  }
+  stages {
+    stage('Clone repo') {
+      steps {
+        sh 'rm -fr html-app-demo'
+        sh 'echo "Cloning a repo..."'
+        sh 'git clone https://github.com/prayag-sangode/html-app-demo.git'
+      }
+    }
+
+    stage('Build Docker Image') {
+      steps {
+        sh 'id;whoami'  
+        sh '''
+          echo "Building the Docker image..."
+          cd html-app-demo
+          docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -f Dockerfile .
+        '''
+      }
+    }
+
+    stage('Docker Login & Push') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+          sh '''
+            echo "Logging into Docker Hub..."
+            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+            echo "Tagging and pushing the image..."
+            docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${DOCKER_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}
+            docker push ${DOCKER_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}
+          '''
+        }
+      }
+    }
+  }
+}
